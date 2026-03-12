@@ -1,0 +1,4 @@
+# HTTrack Website Copier Cookie File
+# This file format is compatible with Netscape cookies
+www.alomariya.org	TRUE	/	FALSE	1999999999	_lscache_vary	22fa79d8c2fc69905870f7d856dc7b40
+

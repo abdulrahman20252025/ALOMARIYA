@@ -1,0 +1,27 @@
+@charset "UTF-8";
+/*
+Theme Name: Alomariya
+Theme URI: #
+Author: Mohamed Samir
+Author URI: https://www.linkedin.com/in/mohamed-samir-salama
+Description: Simple Project.
+License: GNU General Public License v2 or later
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
+*/
+
+
+
+.kalimad{
+    background-image: 
+    url('assets/mo_images/top_a.png'), 
+    url('assets/mo_images/bottom_a.png'), 
+    url('assets/mo_images/center_a.png')  !important;   
+
+    background-position: top center, center calc(100% + 44px), center center !important;
+    background-size: contain, contain, contain !important;
+    background-repeat: no-repeat, no-repeat, repeat-y !important;
+
+    height: initial;
+    margin: 0 10px 30px auto;
+    box-shadow: 0px 14px 17px -13px black;
+}
