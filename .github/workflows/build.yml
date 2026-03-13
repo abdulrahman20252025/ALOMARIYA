@@ -15,14 +15,13 @@ jobs:
       - name: Install Capacitor
         run: |
           npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npm install @capacitor/core@4 @capacitor/cli@4 @capacitor/android@4
           npx cap init ALOMARIYA com.alomariya.app --web-dir www.alomariya.org
           npx cap add android
       - name: Build APK
         run: |
           cd android
           chmod +x gradlew
-          rm -rf ~/.gradle/caches
           ./gradlew assembleDebug --no-daemon
       - uses: actions/upload-artifact@v4
         with:
