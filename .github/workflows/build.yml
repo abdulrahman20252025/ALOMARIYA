@@ -19,6 +19,10 @@ jobs:
           httrack https://www.alomariya.org/ -O ./site -r5 -%v \
             -X "*.mp4" -X "*.mp3"
           mv ./site/www.alomariya.org ./www
+          find ./www -name "*.html" -exec sed -i \
+            's|<meta name="viewport"[^>]*>||g' {} \;
+          find ./www -name "*.html" -exec sed -i \
+            's|<head>|<head><meta name="viewport" content="width=device-width, initial-scale=1.0">|g' {} \;
 
       - name: Install Capacitor
         run: |
@@ -37,3 +41,4 @@ jobs:
         with:
           name: alomariya-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+ثم اضغط Commit changes
