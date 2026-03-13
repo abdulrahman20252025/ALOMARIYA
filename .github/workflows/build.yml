@@ -7,7 +7,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
-          java-version: '11'
+          java-version: '17'
           distribution: 'temurin'
       - uses: actions/setup-node@v4
         with:
@@ -22,6 +22,12 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
+          name: Build APK
+         run: | 
+          cd android
+          chmod +x gradlew
+          sed -i 's/bcprov-jdk15on/bcprov-jdk18on/g' app/build.gradle 2>/dev/null || true
+          ./gradlew assembleDebug --no-daemon
           ./gradlew assembleDebug -Dorg.gradle.jvmargs="-Xmx2048m" --no-daemon
       - uses: actions/upload-artifact@v4
         with:
