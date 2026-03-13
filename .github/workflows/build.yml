@@ -12,17 +12,27 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '18'
+
+      - name: Download Website
+        run: |
+          sudo apt-get install -y httrack
+          httrack https://www.alomariya.org/ -O ./site -r5 -%v \
+            -X "*.mp4" -X "*.mp3"
+          mv ./site/www.alomariya.org ./www
+
       - name: Install Capacitor
         run: |
           npm init -y
           npm install @capacitor/core@4 @capacitor/cli@4 @capacitor/android@4
-          npx cap init ALOMARIYA com.alomariya.app --web-dir www.alomariya.org
+          npx cap init ALOMARIYA com.alomariya.app --web-dir www
           npx cap add android
+
       - name: Build APK
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
+
       - uses: actions/upload-artifact@v4
         with:
           name: alomariya-apk
