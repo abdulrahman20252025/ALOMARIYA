@@ -16,7 +16,7 @@ jobs:
         run: |
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          npx cap init ALOMARIYA com.alomariya.app --web-dir .
+          npx cap init ALOMARIYA com.alomariya.app --web-dir www.alomariya.org
           npx cap add android
       - name: Build APK
         run: |
