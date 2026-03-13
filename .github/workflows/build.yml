@@ -16,13 +16,24 @@ jobs:
       - name: Download Website
         run: |
           sudo apt-get install -y httrack
-          httrack https://www.alomariya.org/ -O ./site -r5 -%v \
-            -X "*.mp4" -X "*.mp3"
+          httrack https://www.alomariya.org/ -O ./site -r5 -%v -X "*.mp4" -X "*.mp3"
           mv ./site/www.alomariya.org ./www
-          find ./www -name "*.html" -exec sed -i \
-            's|<meta name="viewport"[^>]*>||g' {} \;
-          find ./www -name "*.html" -exec sed -i \
-            's|<head>|<head><meta name="viewport" content="width=device-width, initial-scale=1.0">|g' {} \;
+          python3 fix_viewport.py
+
+      - name: Fix Viewport
+        run: |
+          cat > fix_viewport.py << 'EOF'
+          import os, re
+          for root, dirs, files in os.walk('./www'):
+              for f in files:
+                  if f.endswith('.html'):
+                      path = os.path.join(root, f)
+                      txt = open(path, encoding='utf-8', errors='ignore').read()
+                      txt = re.sub(r'<meta name="viewport"[^>]*>', '', txt)
+                      txt = txt.replace('<head>', '<head><meta name="viewport" content="width=device-width, initial-scale=1.0">')
+                      open(path, 'w', encoding='utf-8').write(txt)
+          EOF
+          python3 fix_viewport.py
 
       - name: Install Capacitor
         run: |
@@ -41,4 +52,3 @@ jobs:
         with:
           name: alomariya-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
-ثم اضغط Commit changes
