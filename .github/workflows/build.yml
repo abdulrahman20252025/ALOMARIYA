@@ -16,23 +16,30 @@ jobs:
       - name: Download Website
         run: |
           sudo apt-get install -y httrack
-          httrack https://www.alomariya.org/ -O ./site -r5 -%v -X "*.mp4" -X "*.mp3"
+          httrack https://www.alomariya.org/ -O ./site -r8 -%v -X "*.mp4" -X "*.mp3"
           mv ./site/www.alomariya.org ./www
 
-      - name: Fix Viewport
+      - name: Fix HTML
         run: |
-          cat > fix_viewport.py << 'EOF'
+          cat > fix.py << 'EOF'
           import os, re
           for root, dirs, files in os.walk('./www'):
               for f in files:
-                  if f.endswith('.html'):
-                      path = os.path.join(root, f)
-                      txt = open(path, encoding='utf-8', errors='ignore').read()
-                      txt = re.sub(r'<meta name="viewport"[^>]*>', '', txt)
-                      txt = txt.replace('<head>', '<head><meta name="viewport" content="width=device-width, initial-scale=1.0">')
-                      open(path, 'w', encoding='utf-8').write(txt)
+                  if not f.endswith('.html'):
+                      continue
+                  path = os.path.join(root, f)
+                  txt = open(path, encoding='utf-8', errors='ignore').read()
+                  # Fix viewport
+                  txt = re.sub(r'<meta name="viewport"[^>]*>', '', txt)
+                  txt = txt.replace('<head>', '<head><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">')
+                  # Remove external scripts causing freeze
+                  txt = re.sub(r'<script[^>]*src="https?://(?!www\.alomariya\.org)[^"]*"[^>]*></script>', '', txt)
+                  # Fix PDF buttons - convert JS calls to direct links
+                  txt = re.sub(r'href="javascript:[^"]*"([^>]*?)data-url="([^"]*\.pdf)"', r'href="\2"\1', txt)
+                  open(path, 'w', encoding='utf-8').write(txt)
+          print('Done fixing HTML files')
           EOF
-          python3 fix_viewport.py
+          python3 fix.py
 
       - name: Install Capacitor
         run: |
@@ -40,6 +47,26 @@ jobs:
           npm install @capacitor/core@4 @capacitor/cli@4 @capacitor/android@4
           npx cap init ALOMARIYA com.alomariya.app --web-dir www
           npx cap add android
+
+      - name: Fix WebView
+        run: |
+          cat > android/app/src/main/java/com/alomariya/app/MainActivity.java << 'EOF'
+          package com.alomariya.app;
+          import android.os.Bundle;
+          import android.webkit.WebSettings;
+          import com.getcapacitor.BridgeActivity;
+          public class MainActivity extends BridgeActivity {
+              @Override
+              public void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  WebSettings s = getBridge().getWebView().getSettings();
+                  s.setUseWideViewPort(true);
+                  s.setLoadWithOverviewMode(true);
+                  s.setBuiltInZoomControls(false);
+                  s.setDisplayZoomControls(false);
+              }
+          }
+          EOF
 
       - name: Build APK
         run: |
