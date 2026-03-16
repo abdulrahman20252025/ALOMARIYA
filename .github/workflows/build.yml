@@ -9,41 +9,107 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '18'
 
-      - name: Fix HTML
+      - name: Create Android Project
         run: |
-          python3 - << 'EOF'
-          import os, re
-          fix = '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
-          for root, dirs, files in os.walk('./www'):
-              for f in files:
-                  if not f.endswith('.html'):
-                      continue
-                  path = os.path.join(root, f)
-                  txt = open(path, encoding='utf-8', errors='ignore').read()
-                  txt = re.sub(r'<meta[^>]*name=["\']viewport["\'][^>]*>', '', txt)
-                  txt = txt.replace('<head>', '<head>' + fix, 1)
-                  open(path, 'w', encoding='utf-8').write(txt)
-          print('Done')
+          mkdir -p app/src/main/java/com/alomariya/app
+          mkdir -p app/src/main/assets/www
+          cp -r www/* app/src/main/assets/www/
+
+      - name: Create MainActivity
+        run: |
+          cat > app/src/main/java/com/alomariya/app/MainActivity.java << 'EOF'
+          package com.alomariya.app;
+          import android.app.Activity;
+          import android.os.Bundle;
+          import android.webkit.WebSettings;
+          import android.webkit.WebView;
+          import android.webkit.WebViewClient;
+          public class MainActivity extends Activity {
+              WebView webView;
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  webView = new WebView(this);
+                  setContentView(webView);
+                  WebSettings s = webView.getSettings();
+                  s.setJavaScriptEnabled(true);
+                  s.setUseWideViewPort(true);
+                  s.setLoadWithOverviewMode(false);
+                  s.setSupportZoom(true);
+                  s.setBuiltInZoomControls(true);
+                  s.setDisplayZoomControls(false);
+                  s.setDomStorageEnabled(true);
+                  webView.setWebViewClient(new WebViewClient());
+                  webView.loadUrl("file:///android_asset/www/index.html");
+              }
+              @Override
+              public void onBackPressed() {
+                  if (webView.canGoBack()) webView.goBack();
+                  else super.onBackPressed();
+              }
+          }
           EOF
 
-      - name: Install Capacitor
+      - name: Create AndroidManifest
         run: |
-          npm init -y
-          npm install @capacitor/core@4 @capacitor/cli@4 @capacitor/android@4
-          npx cap init ALOMARIYA com.alomariya.app --web-dir www
-          npx cap add android
+          cat > app/src/main/AndroidManifest.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+              package="com.alomariya.app">
+              <uses-permission android:name="android.permission.INTERNET"/>
+              <application
+                  android:allowBackup="true"
+                  android:label="العمري الحسني"
+                  android:usesCleartextTraffic="true">
+                  <activity android:name=".MainActivity"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+      - name: Create Gradle Files
+        run: |
+          cat > build.gradle << 'EOF'
+          buildscript {
+              repositories { google(); mavenCentral() }
+              dependencies { classpath 'com.android.tools.build:gradle:8.0.0' }
+          }
+          allprojects {
+              repositories { google(); mavenCentral() }
+          }
+          EOF
+          cat > app/build.gradle << 'EOF'
+          apply plugin: 'com.android.application'
+          android {
+              compileSdk 33
+              defaultConfig {
+                  applicationId "com.alomariya.app"
+                  minSdk 21
+                  targetSdk 33
+                  versionCode 1
+                  versionName "1.0"
+              }
+          }
+          EOF
+          cat > settings.gradle << 'EOF'
+          include ':app'
+          EOF
+          cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
+          distributionUrl=https\://services.gradle.org/distributions/gradle-8.0-all.zip
+          EOF
 
       - name: Build APK
         run: |
-          cd android
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
       - uses: actions/upload-artifact@v4
         with:
           name: alomariya-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
