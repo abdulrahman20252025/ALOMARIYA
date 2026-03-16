@@ -77,39 +77,51 @@ jobs:
         run: |
           mkdir -p gradle/wrapper
           cat > build.gradle << 'EOF'
-          buildscript {
-              repositories { google(); mavenCentral() }
-              dependencies { classpath 'com.android.tools.build:gradle:8.0.0' }
-          }
-          allprojects {
-              repositories { google(); mavenCentral() }
+          plugins {
+              id 'com.android.application' version '8.1.0' apply false
           }
           EOF
           cat > app/build.gradle << 'EOF'
-          apply plugin: 'com.android.application'
+          plugins {
+              id 'com.android.application'
+          }
           android {
-              compileSdk 33
+              namespace 'com.alomariya.app'
+              compileSdk 34
               defaultConfig {
-                  applicationId "com.alomariya.app"
+                  applicationId 'com.alomariya.app'
                   minSdk 21
-                  targetSdk 33
+                  targetSdk 34
                   versionCode 1
-                  versionName "1.0"
+                  versionName '1.0'
               }
           }
           EOF
           cat > settings.gradle << 'EOF'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
           include ':app'
           EOF
           cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
-          distributionUrl=https\://services.gradle.org/distributions/gradle-8.0-all.zip
+          distributionUrl=https\://services.gradle.org/distributions/gradle-8.1.1-all.zip
           EOF
 
       - name: Build APK
         run: |
-          wget https://services.gradle.org/distributions/gradle-8.0-bin.zip
-          unzip gradle-8.0-bin.zip
-          export PATH=$PATH:$(pwd)/gradle-8.0/bin
+          wget -q https://services.gradle.org/distributions/gradle-8.1.1-bin.zip
+          unzip -q gradle-8.1.1-bin.zip
+          export PATH=$PATH:$(pwd)/gradle-8.1.1/bin
           gradle wrapper
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
