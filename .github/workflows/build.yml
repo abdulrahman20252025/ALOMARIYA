@@ -13,11 +13,16 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Inject Viewport Fix
+      - name: Download Website
+        run: |
+          sudo apt-get install -y httrack
+          httrack https://www.alomariya.org/ -O ./site -r5 -%v -X "*.mp4" -X "*.mp3"
+          mv ./site/www.alomariya.org ./www
+
+      - name: Fix Viewport
         run: |
           python3 - << 'EOF'
           import os, re
-          script = '<script>window.addEventListener("load",function(){var m=document.querySelector("meta[name=viewport]");if(m)m.content="width=device-width,initial-scale=1.0";});</script>'
           for root, dirs, files in os.walk('./www'):
               for f in files:
                   if not f.endswith('.html'):
@@ -25,7 +30,7 @@ jobs:
                   path = os.path.join(root, f)
                   txt = open(path, encoding='utf-8', errors='ignore').read()
                   txt = re.sub(r'<meta[^>]*name=["\']viewport["\'][^>]*/?>','',txt)
-                  txt = txt.replace('<head>','<head><meta name="viewport" content="width=device-width,initial-scale=1.0">'+script,1)
+                  txt = txt.replace('<head>','<head><meta name="viewport" content="width=device-width,initial-scale=1.0">',1)
                   open(path,'w',encoding='utf-8').write(txt)
           print('Done')
           EOF
