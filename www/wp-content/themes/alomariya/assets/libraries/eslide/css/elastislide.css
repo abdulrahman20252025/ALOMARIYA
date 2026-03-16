@@ -1,0 +1,122 @@
+/* Elastislide Style */
+
+.elastislide-list {
+	list-style-type: none;
+	display: none;
+}
+
+.no-js .elastislide-list {
+	display: block;
+}
+
+.elastislide-carousel ul li {
+	min-width: 20px; /* minimum width of the image (min width + border) */
+}
+
+.elastislide-wrapper {
+	position: relative;
+	background-color: #FCFCFC;
+	background: -moz-linear-gradient(top,  #FCFCFC 66%, orange 66%, orange 68%,#C1CDCD 68%); 
+    background: -webkit-gradient(linear, left top, left bottom, color-stop(70%,#FCFCFC), color-stop(30%,#C1CDCD));
+	/*background: -webkit-linear-gradient(top,  #b3d7ff 0%,#FFFFFF 100%);
+	background: -webkit-linear-gradient(top,  #fff 70%,#CDAF95 30%);*/
+	background: -webkit-linear-gradient(top,  #FCFCFC 66%, orange 66%, orange 68%,#C1CDCD 68%);
+	background: -o-linear-gradient(top,  #FCFCFC 66%, orange 66%, orange 68%,#C1CDCD 68%);  
+	background: -ms-linear-gradient(top,  #FCFCFC 70%,#C1CDCD 30%); 
+	background: linear-gradient(top,  #FCFCFC 66%, orange 66%, orange 68%,#C1CDCD 68%);   
+	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#FCFCFC' 70%, endColorstr='#C1CDCD' 30%,GradientType=0 );
+	margin: 0 auto;
+	min-height: 60px;
+	box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+}
+
+.elastislide-wrapper.elastislide-loading {
+	background-image: url(../images/loading.gif);
+	background-repeat: no-repeat;
+	background-position: center center;
+}
+
+.elastislide-horizontal {
+	padding: 10px 40px;
+}
+
+.elastislide-carousel {
+	overflow: hidden;
+	position: relative;
+}
+
+.elastislide-carousel ul {
+	position: relative;
+	display: block;
+	list-style-type: none;
+	padding: 0;
+	margin: 0;
+ /* -webkit-backface-visibility: hidden; */
+	-webkit-transform: translateX(0px);
+	-moz-transform: translateX(0px);
+	-ms-transform: translateX(0px);
+	-o-transform: translateX(0px);
+	transform: translateX(0px);
+}
+
+.elastislide-horizontal ul {
+	white-space: nowrap;
+}
+
+.elastislide-carousel ul li {
+	margin: 0;
+	-webkit-backface-visibility: hidden;
+}
+
+.elastislide-horizontal ul li {
+	height: 100%;
+	display: inline-block;
+}
+
+
+.elastislide-carousel ul li a {
+	display: inline-block;
+	width: 100%;
+}
+
+.elastislide-carousel ul li a img {
+	display: block;
+	border: 0px solid white;
+	padding:5px;
+	max-width: 100%;
+}
+
+/* Navigation Arrows */
+
+.elastislide-wrapper nav span {
+	position: absolute;
+	background: #bfbfbf url(../images/nav.png) no-repeat 4px -17px;
+	width: 23px;
+	height: 23px;
+	border-radius: 50%;
+	-moz-border-radius:50%;
+	-webkit-border-radius:50%;
+	-ms-border-radius:50%;
+	-khtml-border-radius:50%;
+	-o-border-radius:50%;
+	border:0px solid  #666;
+	text-indent: -9000px;
+	cursor: pointer;
+	opacity: .8;
+}
+
+.elastislide-wrapper nav span:hover {
+	opacity: 1.0
+}
+
+.elastislide-horizontal nav span {
+	top: 50%;
+	right: 10px;
+	margin-top: -11px;
+}
+
+.elastislide-horizontal nav span.elastislide-next {
+	left: 10px;
+	right: auto;
+	background-position: 4px 3px;
+}

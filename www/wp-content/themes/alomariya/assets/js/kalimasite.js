@@ -1,0 +1,376 @@
+jQuery(document).ready(function($){
+	
+		jQuery("#imround").on("click", function() { 
+		       jQuery("#motsite").dialog({
+			   modal: true,
+			   clickOutside: true,
+			   draggable: false,
+			   resizable: false,
+			   width: 950,
+			   height: 'auto',
+			   show:{
+               effect: 'drop',
+			   direction:'right',
+               duration: 800 
+                },
+			   hide: {
+               effect: 'drop',
+			   direction:'right',
+               duration: 800 
+                },
+			    open: function(){
+				jQuery('.ui-widget-overlay').css('position', 'fixed');
+			   jQuery('.ui-widget-overlay').css('background', '#a9a9a9');
+			   jQuery('.ui-widget-overlay').bind('click',function(){
+			   jQuery('#motsite').dialog('close');
+			   })
+			   } 
+			   });
+		 });
+		 
+	
+	/* ***************************** */
+	
+	 $('.makalat').hover(function (a) {
+        $('#makalat').find('img').attr('src', function (i, src) {
+            return src.replace('images/i4.png', 'images/i44.png')
+        })
+    }, function (a) {
+        $('#makalat').find('img').attr('src', function (i, src) {
+            return src.replace('images/i44.png', 'images/i4.png')
+        })
+    });
+	$('.maani').hover(function (b) {
+        $('#maani').find('img').attr('src', function (i, src) {
+            return src.replace('images/i2.png', 'images/i22.png')
+        })
+    }, function (b) {
+        $('#maani').find('img').attr('src', function (i, src) {
+            return src.replace('images/i22.png', 'images/i2.png')
+        })
+    });
+	$('.istidrakat').hover(function (c) {
+        $('#istidrakat').find('img').attr('src', function (i, src) {
+            return src.replace('images/i133.png', 'images/i1333.png')
+        })
+    }, function (c) {
+        $('#istidrakat').find('img').attr('src', function (i, src) {
+            return src.replace('images/i1333.png', 'images/i133.png')
+        })
+    });
+	$('.choubahmonkirin').hover(function (d) {
+        $('#choubahmonkirin').find('img').attr('src', function (i, src) {
+            return src.replace('images/i3.png', 'images/i33.png')
+        })
+    }, function (d) {
+        $('#choubahmonkirin').find('img').attr('src', function (i, src) {
+            return src.replace('images/i33.png', 'images/i3.png')
+        })
+    });
+	$('.choubahmotassawifa').hover(function (e) {
+        $('#choubahmotassawifa').find('img').attr('src', function (i, src) {
+            return src.replace('images/i1.png', 'images/i11.png')
+        })
+    }, function (e) {
+        $('#choubahmotassawifa').find('img').attr('src', function (i, src) {
+            return src.replace('images/i11.png', 'images/i1.png')
+        })
+    });
+	$('.ibar').hover(function (f) {
+        $('#ibar').find('img').attr('src', function (i, src) {
+            return src.replace('images/i111.png', 'images/i1111.png')
+        })
+    }, function (f) {
+        $('#ibar').find('img').attr('src', function (i, src) {
+            return src.replace('images/i1111.png', 'images/i111.png')
+        })
+    });
+	$('.awrak').hover(function (g) {
+        $('#awrak').find('img').attr('src', function (i, src) {
+            return src.replace('images/i7.png', 'images/i77.png')
+        })
+    }, function (g) {
+        $('#awrak').find('img').attr('src', function (i, src) {
+            return src.replace('images/i77.png', 'images/i7.png')
+        })
+    });
+	$('.idaat').hover(function (h) {
+        $('#idaat').find('img').attr('src', function (i, src) {
+            return src.replace('images/i10.png', 'images/i110.png')
+        })
+    }, function (h) {
+        $('#idaat').find('img').attr('src', function (i, src) {
+            return src.replace('images/i110.png', 'images/i10.png')
+        })
+    });
+	$('.fikh').hover(function (i) {
+        $('#fikh').find('img').attr('src', function (i, src) {
+            return src.replace('images/i8.png', 'images/i88.png')
+        })
+    }, function (i) {
+        $('#fikh').find('img').attr('src', function (i, src) {
+            return src.replace('images/i88.png', 'images/i8.png')
+        })
+    });
+	$('.rassail').hover(function (j) {
+        $('#rassail').find('img').attr('src', function (i, src) {
+            return src.replace('images/i5.png', 'images/i55.png')
+        })
+    }, function (j) {
+        $('#rassail').find('img').attr('src', function (i, src) {
+            return src.replace('images/i55.png', 'images/i5.png')
+        })
+    });
+	$('.mostalahat').hover(function (k) {
+        $('#mostalahat').find('img').attr('src', function (i, src) {
+            return src.replace('images/i6.png', 'images/i66.png')
+        })
+    }, function (k) {
+        $('#mostalahat').find('img').attr('src', function (i, src) {
+            return src.replace('images/i66.png', 'images/i6.png')
+        })
+    });
+	$('.ahdath').hover(function (l) {
+        $('#ahdath').find('img').attr('src', function (i, src) {
+            return src.replace('images/i9.png', 'images/i99.png')
+        })
+    }, function (l) {
+        $('#ahdath').find('img').attr('src', function (i, src) {
+            return src.replace('images/i99.png', 'images/i9.png')
+        })
+    }); 
+	/* ************************************************************* */
+		
+		$('.meanmenu1').hover(function (m) {
+			$('.meanmenu1').attr('src', function (i, src) {
+            return src.replace('images/a1.png', 'images/a11.png')
+			})
+        }, function (m) {
+           $('.meanmenu1').attr('src', function (i, src) {
+            return src.replace('images/a11.png', 'images/a1.png')
+           })
+		});
+		$('.meanmenu2').hover(function (n) {
+			$('.meanmenu2').attr('src', function (i, src) {
+            return src.replace('images/a2.png', 'images/a22.png')
+			})
+        }, function (n) {
+           $('.meanmenu2').attr('src', function (i, src) {
+            return src.replace('images/a22.png', 'images/a2.png')
+           })
+		});
+		$('.meanmenu3').hover(function (o) {
+			$('.meanmenu3').attr('src', function (i, src) {
+            return src.replace('images/a3.png', 'images/a33.png')
+			})
+        }, function (o) {
+           $('.meanmenu3').attr('src', function (i, src) {
+            return src.replace('images/a33.png', 'images/a3.png')
+           })
+		});
+		$('.meanmenu4').hover(function (p) {
+			$('.meanmenu4').attr('src', function (i, src) {
+            return src.replace('images/a4.png', 'images/a44.png')
+			})
+        }, function (p) {
+           $('.meanmenu4').attr('src', function (i, src) {
+            return src.replace('images/a44.png', 'images/a4.png')
+           })
+		});
+		$('.meanmenu5').hover(function (q) {
+			$('.meanmenu5').attr('src', function (i, src) {
+            return src.replace('images/a5.png', 'images/a55.png')
+			})
+        }, function (q) {
+           $('.meanmenu5').attr('src', function (i, src) {
+            return src.replace('images/a55.png', 'images/a5.png')
+           })
+		});
+	/* ************************************************************* */	
+				
+
+jQuery("#sublistemail").click(function(){
+		jQuery.validator.addMethod("validate_email",function(value, element) {
+
+
+       if(/^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/.test( value ))
+        {
+           return true;
+        }
+        else
+        {
+          return false;
+        }    
+  },"اكتب بريد الكتروني صحيح");
+  
+		     jQuery("#listemail").validate({
+    wrapper: 'span',
+    errorPlacement: function (error, element) {
+        error.addClass("errorvalemail");
+        error.insertBefore(element);
+    }, 
+
+				 
+                rules: {
+                   
+					emaillist: {
+                        required: true,
+                        validate_email: true,
+						remote: {
+                        url: "checkemail.php",
+                        type: "post",
+						data: {
+                              email: function() {
+                              return $("#emaillist").val();
+                              }
+                         }
+						} 
+                    }
+                },
+                messages: {
+					emaillist:{ 
+					       required :  "اكتب البريد الإلكتروني",
+					       email : "اكتب بريد الكتروني صحيح",
+						   remote: "هذا البريد الالكتروني موجود"
+						   }       
+                },
+                submitHandler: function(form) {
+                    form.submit();
+                }
+
+				
+            });
+			
+			});
+			
+			
+			
+			
+			
+		/* ******************************************* */
+			$(".search").prop('disabled', true);
+			//$(".search").attr("disabled", true);
+			$("#search").bind("change keyup input",function() {
+    if ($(this).val() !== "") {
+	$(".search").removeAttr("disabled");
+	$('.search').css( 'cursor', 'pointer' );	
+    
+  } else {
+    $(".search").attr("disabled", true);
+  }
+  }); 
+     /* ****************** اعتصام debut *********************** */
+$('div#blocknote').hover(function(){
+// $('span#iatissam').stop(true).toggle(1000);
+$('#iatissam').stop(true).toggle(1000);
+})
+});
+   /* ************************ time debut ************************* */
+var now = new Date(); 
+var d = new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(),  now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds());
+d.setTime( d.getTime() + d.getTimezoneOffset() );
+setInterval(function() {
+	
+	    function lZero(n) {
+           return n.toString().length == 1 ?  n = '0' + n : n;
+        }
+        d.setSeconds(d.getSeconds() + 1);
+        $('#timel').text((lZero(d.getHours()) +':' + lZero(d.getMinutes()) + ':' + lZero(d.getSeconds()) ));
+    }, 1000); 
+	/* ************************ time fin ************************* */
+	/* ****************** اعتصام fin *********************** */
+	
+/*	
+	function isScrolledIntoView(el) {
+  var elemTop = el.getBoundingClientRect().top;
+  var elemBottom = el.getBoundingClientRect().bottom;
+
+  var isVisible = (elemTop >= 0) && (elemBottom <= window.innerHeight);
+  return isVisible;
+}
+
+$(window).on('scroll', function() {
+  if (isScrolledIntoView(document.getElementById('sumdays'))) {
+    jQuery({ Counter: 0 }).animate({ Counter: $('#sumdays').text() }, {
+  duration: 5000,
+  step: function () {
+    $('#sumdays').text(Math.ceil(this.Counter));
+  }
+});
+
+    // Unbind scroll event
+    $(window).off('scroll');
+  }
+});
+
+	
+*/
+  
+/*	 
+		 $('.kalimad').hover(function() {
+          clearInterval(interv);
+        }, function() {
+          interv = setTimeout(showSlidesinfini,6000);
+        }); */
+		
+var slideIndex = 1;
+
+function plusSlides(n) {
+  showSlides(slideIndex += n);
+}
+
+function currentSlide(n) {
+  showSlides(slideIndex = n);
+}
+var j;
+function showSlides(n) {
+    
+  var i;
+  var slides = document.getElementsByClassName("tkdawria");
+  var dots = document.getElementsByClassName("dot");
+  if(slides.length > 0){
+    if (n > slides.length) {slideIndex = 1}    
+    if (n < 1) {slideIndex = slides.length}
+    for (i = 0; i < slides.length; i++) {
+        slides[i].style.display = "none";  
+    }
+    for (i = 0; i < dots.length; i++) {
+        dots[i].className = dots[i].className.replace(" active", "");
+    }
+    slides[slideIndex-1].style.display = "block";  
+    dots[slideIndex-1].className += " active";
+    j =  n;
+    
+    return j;
+  }
+  
+  
+}
+
+/*	
+
+var interv ;
+
+function showSlidesinfini() { 
+	if(j){ slideIndex = j;}
+    var i;
+    var slides = document.getElementsByClassName("tkdawria");
+    var dots = document.getElementsByClassName("dot");
+    for (i = 0; i < slides.length; i++) {
+       slides[i].style.display = "none";  
+    }
+    slideIndex++;
+    if (slideIndex> slides.length) {slideIndex = 1}    
+    for (i = 0; i < dots.length; i++) {
+        dots[i].className = dots[i].className.replace(" active", "");
+    }
+    slides[slideIndex-1].style.display = "block";  
+    dots[slideIndex-1].className += " active";
+	j++
+	if (j> slides.length) {j = 1;} 
+	interv = setTimeout(showSlidesinfini,6000); 
+	}		
+
+*/
+	
+  
