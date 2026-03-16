@@ -107,6 +107,10 @@ jobs:
 
       - name: Build APK
         run: |
+          wget https://services.gradle.org/distributions/gradle-8.0-bin.zip
+          unzip gradle-8.0-bin.zip
+          export PATH=$PATH:$(pwd)/gradle-8.0/bin
+          gradle wrapper
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
