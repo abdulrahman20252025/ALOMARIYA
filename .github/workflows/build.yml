@@ -13,16 +13,11 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Download Website
-        run: |
-          sudo apt-get install -y httrack
-          httrack https://www.alomariya.org/ -O ./site -r9 -%v -X "*.mp4" -X "*.mp3" +*.pdf
-          mv ./site/www.alomariya.org ./www
-
-      - name: Fix HTML Viewport
+      - name: Fix HTML
         run: |
           python3 - << 'EOF'
           import os, re
+          fix = '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
           for root, dirs, files in os.walk('./www'):
               for f in files:
                   if not f.endswith('.html'):
@@ -30,7 +25,7 @@ jobs:
                   path = os.path.join(root, f)
                   txt = open(path, encoding='utf-8', errors='ignore').read()
                   txt = re.sub(r'<meta[^>]*name=["\']viewport["\'][^>]*>', '', txt)
-                  txt = txt.replace('<head>', '<head><meta name="viewport" content="width=device-width, initial-scale=1.0">', 1)
+                  txt = txt.replace('<head>', '<head>' + fix, 1)
                   open(path, 'w', encoding='utf-8').write(txt)
           print('Done')
           EOF
@@ -41,27 +36,6 @@ jobs:
           npm install @capacitor/core@4 @capacitor/cli@4 @capacitor/android@4
           npx cap init ALOMARIYA com.alomariya.app --web-dir www
           npx cap add android
-
-      - name: Fix WebView Settings
-        run: |
-          cat > android/app/src/main/java/com/alomariya/app/MainActivity.java << 'EOF'
-          package com.alomariya.app;
-          import android.os.Bundle;
-          import android.webkit.WebSettings;
-          import com.getcapacitor.BridgeActivity;
-          public class MainActivity extends BridgeActivity {
-              @Override
-              public void onCreate(Bundle savedInstanceState) {
-                  super.onCreate(savedInstanceState);
-                  WebSettings s = getBridge().getWebView().getSettings();
-                  s.setUseWideViewPort(true);
-                  s.setLoadWithOverviewMode(false);
-                  s.setSupportZoom(true);
-                  s.setBuiltInZoomControls(true);
-                  s.setDisplayZoomControls(false);
-              }
-          }
-          EOF
 
       - name: Build APK
         run: |
