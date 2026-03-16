@@ -10,6 +10,9 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Create Android Project
         run: |
           mkdir -p app/src/main/java/com/alomariya/app
@@ -120,12 +123,12 @@ jobs:
           zipStoreBase=GRADLE_USER_HOME
           zipStorePath=wrapper/dists
           EOF
-          curl -o gradlew https://raw.githubusercontent.com/gradle/gradle/v8.1.1/gradlew
+          curl -Lo gradle/wrapper/gradle-wrapper.jar https://github.com/gradle/gradle/raw/v8.1.1/gradle/wrapper/gradle-wrapper.jar
+          curl -Lo gradlew https://github.com/gradle/gradle/raw/v8.1.1/gradlew
           chmod +x gradlew
 
       - name: Build APK
-        run: |
-          ./gradlew assembleDebug --no-daemon
+        run: ./gradlew assembleDebug --no-daemon
 
       - uses: actions/upload-artifact@v4
         with:
