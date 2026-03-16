@@ -13,37 +13,37 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Build with Cordova
+      - name: Inject Viewport Fix
         run: |
-          npm install -g cordova
-          cordova create myapp com.alomariya.app "العمري الحسني"
-          cd myapp
-          cordova platform add android
-          rm -rf www/*
-          cp -r ../www/* www/
-          cat > config.xml << 'EOF'
-          <?xml version='1.0' encoding='utf-8'?>
-          <widget id="com.alomariya.app" version="1.0.0"
-              xmlns="http://www.w3.org/ns/widgets"
-              xmlns:cdv="http://cordova.apache.org/ns/1.0">
-              <name>العمري الحسني</name>
-              <preference name="DisallowOverscroll" value="true" />
-              <preference name="android-minSdkVersion" value="21" />
-              <preference name="Orientation" value="default" />
-              <preference name="SetFullscreen" value="false" />
-              <preference name="BackgroundColor" value="0xFFFFFFFF" />
-              <preference name="LoadUrlTimeoutValue" value="700000" />
-              <preference name="DefaultVolumeStream" value="call" />
-              <preference name="AndroidWindowSplashScreenAnimatedIcon" value="" />
-              <content src="index.html" />
-              <allow-navigation href="*" />
-              <allow-intent href="*" />
-              <access origin="*" />
-          </widget>
+          python3 - << 'EOF'
+          import os, re
+          script = '<script>window.addEventListener("load",function(){var m=document.querySelector("meta[name=viewport]");if(m)m.content="width=device-width,initial-scale=1.0";});</script>'
+          for root, dirs, files in os.walk('./www'):
+              for f in files:
+                  if not f.endswith('.html'):
+                      continue
+                  path = os.path.join(root, f)
+                  txt = open(path, encoding='utf-8', errors='ignore').read()
+                  txt = re.sub(r'<meta[^>]*name=["\']viewport["\'][^>]*/?>','',txt)
+                  txt = txt.replace('<head>','<head><meta name="viewport" content="width=device-width,initial-scale=1.0">'+script,1)
+                  open(path,'w',encoding='utf-8').write(txt)
+          print('Done')
           EOF
-          cordova build android --debug
+
+      - name: Install Capacitor
+        run: |
+          npm init -y
+          npm install @capacitor/core@4 @capacitor/cli@4 @capacitor/android@4
+          npx cap init ALOMARIYA com.alomariya.app --web-dir www
+          npx cap add android
+
+      - name: Build APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
 
       - uses: actions/upload-artifact@v4
         with:
           name: alomariya-apk
-          path: myapp/platforms/android/app/build/outputs/apk/debug/app-debug.apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
