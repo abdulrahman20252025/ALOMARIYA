@@ -19,10 +19,18 @@ jobs:
           httrack https://www.alomariya.org/ -O ./site -r5 -%v -X "*.mp4" -X "*.mp3"
           mv ./site/www.alomariya.org ./www
 
-      - name: Fix Viewport
+      - name: Inject Fix
         run: |
+          cat > ./www/mobile-fix.css << 'EOF'
+          * { max-width: 100% !important; box-sizing: border-box !important; }
+          html, body { width: 100% !important; overflow-x: hidden !important; }
+          table { width: 100% !important; }
+          img { max-width: 100% !important; height: auto !important; }
+          EOF
           python3 - << 'EOF'
           import os, re
+          vp = '<meta name="viewport" content="width=device-width,initial-scale=1.0,shrink-to-fit=no">'
+          css = '<link rel="stylesheet" href="/mobile-fix.css">'
           for root, dirs, files in os.walk('./www'):
               for f in files:
                   if not f.endswith('.html'):
@@ -30,7 +38,7 @@ jobs:
                   path = os.path.join(root, f)
                   txt = open(path, encoding='utf-8', errors='ignore').read()
                   txt = re.sub(r'<meta[^>]*name=["\']viewport["\'][^>]*/?>','',txt)
-                  txt = txt.replace('<head>','<head><meta name="viewport" content="width=device-width,initial-scale=1.0">',1)
+                  txt = re.sub(r'<head[^>]*>', lambda m: m.group(0) + vp + css, txt, count=1)
                   open(path,'w',encoding='utf-8').write(txt)
           print('Done')
           EOF
