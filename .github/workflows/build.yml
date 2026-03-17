@@ -12,7 +12,7 @@ jobs:
 
       - name: Download Website
         run: |
-          sudo apt-get install -y httrack
+          sudo apt-get install -y httrack imagemagick
           httrack https://www.alomariya.org/ -O ./site -r5 -%v -X "*.mp4" -X "*.mp3"
           mv ./site/www.alomariya.org ./webfiles
 
@@ -20,7 +20,17 @@ jobs:
         run: |
           mkdir -p app/src/main/java/com/alomariya/app
           mkdir -p app/src/main/assets/www
+          mkdir -p app/src/main/res/mipmap-hdpi
+          mkdir -p app/src/main/res/mipmap-mdpi
+          mkdir -p app/src/main/res/mipmap-xhdpi
+          mkdir -p app/src/main/res/mipmap-xxhdpi
+          mkdir -p app/src/main/res/mipmap-xxxhdpi
           cp -r webfiles/* app/src/main/assets/www/
+          convert icon.jpg -resize 72x72 app/src/main/res/mipmap-hdpi/ic_launcher.png
+          convert icon.jpg -resize 48x48 app/src/main/res/mipmap-mdpi/ic_launcher.png
+          convert icon.jpg -resize 96x96 app/src/main/res/mipmap-xhdpi/ic_launcher.png
+          convert icon.jpg -resize 144x144 app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+          convert icon.jpg -resize 192x192 app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
 
       - name: Create Files
         run: |
@@ -119,7 +129,8 @@ jobs:
               <uses-permission android:name="android.permission.INTERNET"/>
               <application
                   android:allowBackup="true"
-                  android:label="العمري الحسني"
+                  android:icon="@mipmap/ic_launcher"
+                  android:label="العمريّة للتجديد الصوفي"
                   android:usesCleartextTraffic="true">
                   <activity android:name=".MainActivity"
                       android:exported="true">
