@@ -84,10 +84,10 @@ jobs:
           cat > app/src/main/java/com/alomariya/app/MainActivity.java << 'EOF'
           package com.alomariya.app;
           import android.app.Activity;
-          import android.content.Intent;
           import android.net.Uri;
           import android.os.Bundle;
           import android.os.Handler;
+          import androidx.browser.customtabs.CustomTabsIntent;
           public class MainActivity extends Activity {
               LocalServer server;
               @Override
@@ -98,9 +98,11 @@ jobs:
                   new Handler().post(new Runnable() {
                       public void run() {
                           if (server.isReady()) {
-                              Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse("http://localhost:8080/"));
-                              i.setPackage("com.android.chrome");
-                              startActivity(i);
+                              CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder();
+                              builder.setShowTitle(false);
+                              builder.setUrlBarHidingEnabled(true);
+                              CustomTabsIntent customTabsIntent = builder.build();
+                              customTabsIntent.launchUrl(MainActivity.this, Uri.parse("http://localhost:8080/"));
                           } else {
                               new Handler().postDelayed(this, 100);
                           }
@@ -159,6 +161,9 @@ jobs:
                   versionCode 1
                   versionName '1.0'
               }
+          }
+          dependencies {
+              implementation 'androidx.browser:browser:1.5.0'
           }
           EOF
           cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
