@@ -31,14 +31,14 @@ jobs:
           import java.net.*;
           public class LocalServer extends Thread {
               private final Context ctx;
+              private volatile boolean ready = false;
               public LocalServer(Context ctx) { this.ctx = ctx; setDaemon(true); }
+              public boolean isReady() { return ready; }
               public void run() {
                   try {
                       ServerSocket server = new ServerSocket(8080);
-                      while (true) {
-                          Socket s = server.accept();
-                          new Handler(s, ctx).start();
-                      }
+                      ready = true;
+                      while (true) { new Handler(server.accept(), ctx).start(); }
                   } catch (Exception e) {}
               }
               static class Handler extends Thread {
@@ -52,7 +52,8 @@ jobs:
                           String path = line.split(" ")[1];
                           if (path.contains("?")) path = path.substring(0, path.indexOf("?"));
                           path = URLDecoder.decode(path, "UTF-8");
-                          if (path.equals("/")) path = "/index.html";
+                          if (path.endsWith("/")) path = path + "index.html";
+                          if (!path.contains(".")) path = path + "/index.html";
                           String mime = "text/html;charset=utf-8";
                           if (path.endsWith(".css")) mime = "text/css";
                           else if (path.endsWith(".js")) mime = "application/javascript";
@@ -60,7 +61,6 @@ jobs:
                           else if (path.endsWith(".jpg")||path.endsWith(".jpeg")) mime = "image/jpeg";
                           else if (path.endsWith(".gif")) mime = "image/gif";
                           else if (path.endsWith(".pdf")) mime = "application/pdf";
-                          else if (path.endsWith(".woff")||path.endsWith(".woff2")) mime = "font/woff2";
                           OutputStream out = s.getOutputStream();
                           try {
                               InputStream in = ctx.getAssets().open("www" + path);
@@ -71,7 +71,7 @@ jobs:
                               out.write(("HTTP/1.1 200 OK\r\nContent-Type: "+mime+"\r\nContent-Length: "+data.length+"\r\nAccess-Control-Allow-Origin: *\r\n\r\n").getBytes());
                               out.write(data);
                           } catch (Exception e) {
-                              String notFound = "<html><body>404</body></html>";
+                              String notFound = "<html><body>404: " + path + "</body></html>";
                               out.write(("HTTP/1.1 404 Not Found\r\nContent-Length: "+notFound.length()+"\r\n\r\n"+notFound).getBytes());
                           }
                           out.flush(); s.close();
@@ -89,15 +89,23 @@ jobs:
           import android.os.Bundle;
           import android.os.Handler;
           public class MainActivity extends Activity {
+              LocalServer server;
               @Override
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
-                  new LocalServer(this).start();
-                  new Handler().postDelayed(() -> {
-                      Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse("http://localhost:8080/"));
-                      i.setPackage("com.android.chrome");
-                      startActivity(i);
-                  }, 2000);
+                  server = new LocalServer(this);
+                  server.start();
+                  new Handler().post(new Runnable() {
+                      public void run() {
+                          if (server.isReady()) {
+                              Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse("http://localhost:8080/"));
+                              i.setPackage("com.android.chrome");
+                              startActivity(i);
+                          } else {
+                              new Handler().postDelayed(this, 100);
+                          }
+                      }
+                  });
               }
           }
           EOF
@@ -109,7 +117,7 @@ jobs:
               <uses-permission android:name="android.permission.INTERNET"/>
               <application
                   android:allowBackup="true"
-                  android:label="العمري الحسني"
+                  android:label="العمرية للتجديد الصوفي"
                   android:usesCleartextTraffic="true">
                   <activity android:name=".MainActivity"
                       android:exported="true">
