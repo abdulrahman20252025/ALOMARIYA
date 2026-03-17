@@ -9,45 +9,165 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '18'
 
       - name: Download Website
         run: |
           sudo apt-get install -y httrack
           httrack https://www.alomariya.org/ -O ./site -r5 -%v -X "*.mp4" -X "*.mp3"
-          mv ./site/www.alomariya.org ./www
+          mv ./site/www.alomariya.org ./webfiles
 
-      - name: Install Capacitor
+      - name: Create Android Project
         run: |
-          npm init -y
-          npm install @capacitor/core@4 @capacitor/cli@4 @capacitor/android@4
-          npx cap init ALOMARIYA com.alomariya.app --web-dir www
-          npx cap add android
+          mkdir -p app/src/main/java/com/alomariya/app
+          mkdir -p app/src/main/assets/www
+          cp -r webfiles/* app/src/main/assets/www/
 
-      - name: Configure Capacitor
+      - name: Create Files
         run: |
-          cat > capacitor.config.json << 'EOF'
-          {
-            "appId": "com.alomariya.app",
-            "appName": "العمري الحسني",
-            "webDir": "www",
-            "android": {
-              "overrideUserAgent": "Mozilla/5.0 (Linux; Android 10; Mobile; rv:91.0) Gecko/91.0 Firefox/91.0",
-              "allowMixedContent": true
-            }
+          cat > app/src/main/java/com/alomariya/app/LocalServer.java << 'EOF'
+          package com.alomariya.app;
+          import android.content.Context;
+          import java.io.*;
+          import java.net.*;
+          public class LocalServer extends Thread {
+              private final Context ctx;
+              public LocalServer(Context ctx) { this.ctx = ctx; setDaemon(true); }
+              public void run() {
+                  try {
+                      ServerSocket server = new ServerSocket(8080);
+                      while (true) {
+                          Socket s = server.accept();
+                          new Handler(s, ctx).start();
+                      }
+                  } catch (Exception e) {}
+              }
+              static class Handler extends Thread {
+                  Socket s; Context ctx;
+                  Handler(Socket s, Context ctx) { this.s=s; this.ctx=ctx; setDaemon(true); }
+                  public void run() {
+                      try {
+                          BufferedReader r = new BufferedReader(new InputStreamReader(s.getInputStream()));
+                          String line = r.readLine();
+                          if (line == null) { s.close(); return; }
+                          String path = line.split(" ")[1];
+                          if (path.contains("?")) path = path.substring(0, path.indexOf("?"));
+                          path = URLDecoder.decode(path, "UTF-8");
+                          if (path.equals("/")) path = "/index.html";
+                          String mime = "text/html;charset=utf-8";
+                          if (path.endsWith(".css")) mime = "text/css";
+                          else if (path.endsWith(".js")) mime = "application/javascript";
+                          else if (path.endsWith(".png")) mime = "image/png";
+                          else if (path.endsWith(".jpg")||path.endsWith(".jpeg")) mime = "image/jpeg";
+                          else if (path.endsWith(".gif")) mime = "image/gif";
+                          else if (path.endsWith(".pdf")) mime = "application/pdf";
+                          else if (path.endsWith(".woff")||path.endsWith(".woff2")) mime = "font/woff2";
+                          OutputStream out = s.getOutputStream();
+                          try {
+                              InputStream in = ctx.getAssets().open("www" + path);
+                              ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                              byte[] buf = new byte[8192]; int n;
+                              while ((n = in.read(buf)) != -1) bos.write(buf, 0, n);
+                              byte[] data = bos.toByteArray();
+                              out.write(("HTTP/1.1 200 OK\r\nContent-Type: "+mime+"\r\nContent-Length: "+data.length+"\r\nAccess-Control-Allow-Origin: *\r\n\r\n").getBytes());
+                              out.write(data);
+                          } catch (Exception e) {
+                              String notFound = "<html><body>404</body></html>";
+                              out.write(("HTTP/1.1 404 Not Found\r\nContent-Length: "+notFound.length()+"\r\n\r\n"+notFound).getBytes());
+                          }
+                          out.flush(); s.close();
+                      } catch (Exception e) {}
+                  }
+              }
           }
           EOF
-          npx cap sync android
+
+          cat > app/src/main/java/com/alomariya/app/MainActivity.java << 'EOF'
+          package com.alomariya.app;
+          import android.app.Activity;
+          import android.content.Intent;
+          import android.net.Uri;
+          import android.os.Bundle;
+          import android.os.Handler;
+          public class MainActivity extends Activity {
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  new LocalServer(this).start();
+                  new Handler().postDelayed(() -> {
+                      Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse("http://localhost:8080/"));
+                      i.setPackage("com.android.chrome");
+                      startActivity(i);
+                  }, 2000);
+              }
+          }
+          EOF
+
+          cat > app/src/main/AndroidManifest.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+              package="com.alomariya.app">
+              <uses-permission android:name="android.permission.INTERNET"/>
+              <application
+                  android:allowBackup="true"
+                  android:label="العمري الحسني"
+                  android:usesCleartextTraffic="true">
+                  <activity android:name=".MainActivity"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          mkdir -p gradle/wrapper
+          cat > settings.gradle << 'EOF'
+          pluginManagement {
+              repositories { google(); mavenCentral(); gradlePluginPortal() }
+          }
+          dependencyResolutionManagement {
+              repositories { google(); mavenCentral() }
+          }
+          include ':app'
+          EOF
+          cat > build.gradle << 'EOF'
+          plugins {
+              id 'com.android.application' version '8.1.0' apply false
+          }
+          EOF
+          cat > app/build.gradle << 'EOF'
+          plugins {
+              id 'com.android.application'
+          }
+          android {
+              namespace 'com.alomariya.app'
+              compileSdk 34
+              defaultConfig {
+                  applicationId 'com.alomariya.app'
+                  minSdk 21
+                  targetSdk 34
+                  versionCode 1
+                  versionName '1.0'
+              }
+          }
+          EOF
+          cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
+          distributionBase=GRADLE_USER_HOME
+          distributionPath=wrapper/dists
+          distributionUrl=https\://services.gradle.org/distributions/gradle-8.1.1-all.zip
+          zipStoreBase=GRADLE_USER_HOME
+          zipStorePath=wrapper/dists
+          EOF
+          curl -Lo gradle/wrapper/gradle-wrapper.jar https://github.com/gradle/gradle/raw/v8.1.1/gradle/wrapper/gradle-wrapper.jar
+          curl -Lo gradlew https://raw.githubusercontent.com/gradle/gradle/v8.1.1/gradlew
+          chmod +x gradlew
 
       - name: Build APK
-        run: |
-          cd android
-          chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+        run: ./gradlew assembleDebug --no-daemon
 
       - uses: actions/upload-artifact@v4
         with:
           name: alomariya-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
