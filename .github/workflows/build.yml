@@ -16,20 +16,160 @@ jobs:
           httrack https://www.alomariya.org/ -O ./site -r5 -%v -X "*.mp4" -X "*.mp3"
           mv ./site/www.alomariya.org ./webfiles
 
-      - name: Clone WebView Template
+      - name: Create Android Project
         run: |
-          git clone https://github.com/mgks/Android-SmartWebView.git template
-          cp -r webfiles/* template/app/src/main/assets/
-          sed -i 's|ASWV_URL.*=.*"[^"]*"|ASWV_URL = "file:///android_asset/index.html"|' \
-            template/app/src/main/java/mgks/os/swv/SmartWebView.java
+          mkdir -p app/src/main/java/com/alomariya/app
+          mkdir -p app/src/main/assets/www
+          cp -r webfiles/* app/src/main/assets/www/
+
+      - name: Create Server and MainActivity
+        run: |
+          cat > app/src/main/java/com/alomariya/app/LocalServer.java << 'EOF'
+          package com.alomariya.app;
+          import android.content.Context;
+          import java.io.*;
+          import java.net.*;
+          import java.util.*;
+          public class LocalServer extends Thread {
+              private final Context ctx;
+              private ServerSocket server;
+              public LocalServer(Context ctx) { this.ctx = ctx; }
+              public void run() {
+                  try {
+                      server = new ServerSocket(8080);
+                      while (true) {
+                          Socket s = server.accept();
+                          new Handler(s, ctx).start();
+                      }
+                  } catch (Exception e) {}
+              }
+              static class Handler extends Thread {
+                  Socket s; Context ctx;
+                  Handler(Socket s, Context ctx) { this.s=s; this.ctx=ctx; }
+                  public void run() {
+                      try {
+                          BufferedReader r = new BufferedReader(new InputStreamReader(s.getInputStream()));
+                          String line = r.readLine();
+                          if (line == null) { s.close(); return; }
+                          String path = line.split(" ")[1];
+                          if (path.equals("/")) path = "/index.html";
+                          if (path.contains("?")) path = path.substring(0, path.indexOf("?"));
+                          String mime = "text/html";
+                          if (path.endsWith(".css")) mime = "text/css";
+                          else if (path.endsWith(".js")) mime = "application/javascript";
+                          else if (path.endsWith(".png")) mime = "image/png";
+                          else if (path.endsWith(".jpg")) mime = "image/jpeg";
+                          else if (path.endsWith(".gif")) mime = "image/gif";
+                          else if (path.endsWith(".pdf")) mime = "application/pdf";
+                          OutputStream out = s.getOutputStream();
+                          try {
+                              InputStream in = ctx.getAssets().open("www" + path);
+                              byte[] buf = new byte[4096];
+                              ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                              int n;
+                              while ((n = in.read(buf)) != -1) bos.write(buf, 0, n);
+                              byte[] data = bos.toByteArray();
+                              out.write(("HTTP/1.1 200 OK\r\nContent-Type: " + mime + "\r\nContent-Length: " + data.length + "\r\n\r\n").getBytes());
+                              out.write(data);
+                          } catch (Exception e) {
+                              out.write("HTTP/1.1 404 Not Found\r\n\r\n".getBytes());
+                          }
+                          s.close();
+                      } catch (Exception e) {}
+                  }
+              }
+          }
+          EOF
+
+          cat > app/src/main/java/com/alomariya/app/MainActivity.java << 'EOF'
+          package com.alomariya.app;
+          import android.app.Activity;
+          import android.content.Intent;
+          import android.net.Uri;
+          import android.os.Bundle;
+          public class MainActivity extends Activity {
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  new LocalServer(this).start();
+                  try { Thread.sleep(1000); } catch (Exception e) {}
+                  Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse("http://localhost:8080/"));
+                  i.setPackage("com.android.chrome");
+                  startActivity(i);
+              }
+          }
+          EOF
+
+      - name: Create AndroidManifest
+        run: |
+          cat > app/src/main/AndroidManifest.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+              package="com.alomariya.app">
+              <uses-permission android:name="android.permission.INTERNET"/>
+              <application
+                  android:allowBackup="true"
+                  android:label="العمري الحسني"
+                  android:usesCleartextTraffic="true">
+                  <activity android:name=".MainActivity"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+      - name: Create Gradle Files
+        run: |
+          mkdir -p gradle/wrapper
+          cat > settings.gradle << 'EOF'
+          pluginManagement {
+              repositories { google(); mavenCentral(); gradlePluginPortal() }
+          }
+          dependencyResolutionManagement {
+              repositories { google(); mavenCentral() }
+          }
+          include ':app'
+          EOF
+          cat > build.gradle << 'EOF'
+          plugins {
+              id 'com.android.application' version '8.1.0' apply false
+          }
+          EOF
+          cat > app/build.gradle << 'EOF'
+          plugins {
+              id 'com.android.application'
+          }
+          android {
+              namespace 'com.alomariya.app'
+              compileSdk 34
+              defaultConfig {
+                  applicationId 'com.alomariya.app'
+                  minSdk 21
+                  targetSdk 34
+                  versionCode 1
+                  versionName '1.0'
+              }
+          }
+          EOF
+          cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
+          distributionBase=GRADLE_USER_HOME
+          distributionPath=wrapper/dists
+          distributionUrl=https\://services.gradle.org/distributions/gradle-8.1.1-all.zip
+          zipStoreBase=GRADLE_USER_HOME
+          zipStorePath=wrapper/dists
+          EOF
+          curl -Lo gradle/wrapper/gradle-wrapper.jar https://github.com/gradle/gradle/raw/v8.1.1/gradle/wrapper/gradle-wrapper.jar
+          curl -Lo gradlew https://raw.githubusercontent.com/gradle/gradle/v8.1.1/gradlew
+          chmod +x gradlew
 
       - name: Build APK
-        run: |
-          cd template
-          chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+        run: ./gradlew assembleDebug --no-daemon
 
       - uses: actions/upload-artifact@v4
         with:
           name: alomariya-apk
-          path: template/app/build/outputs/apk/debug/app-debug.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
