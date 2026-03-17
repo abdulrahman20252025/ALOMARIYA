@@ -1,0 +1,29 @@
+name: Daily Update
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download Latest Content
+        run: |
+          sudo apt-get install -y httrack
+          httrack https://www.alomariya.org/ -O ./new_site -r5 -%v -X "*.mp4" -X "*.mp3"
+          rm -rf www
+          mv ./new_site/www.alomariya.org ./www
+          date +%s > version.txt
+
+      - name: Push Updates
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "GitHub Action"
+          git add www/ version.txt
+          git diff --staged --quiet || git commit -m "Daily update $(date +%Y-%m-%d)"
+          git push
