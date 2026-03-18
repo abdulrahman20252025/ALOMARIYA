@@ -16,6 +16,22 @@ jobs:
           httrack https://www.alomariya.org/ -O ./site -r5 -%v -X "*.mp4" -X "*.mp3"
           mv ./site/www.alomariya.org ./webfiles
 
+      - name: Fix Links
+        run: |
+          python3 - << 'EOF'
+          import os
+          for root, dirs, files in os.walk('./webfiles'):
+              for f in files:
+                  if not f.endswith('.html'):
+                      continue
+                  path = os.path.join(root, f)
+                  txt = open(path, encoding='utf-8', errors='ignore').read()
+                  txt = txt.replace('https://www.alomariya.org', 'http://localhost:8080')
+                  txt = txt.replace('http://www.alomariya.org', 'http://localhost:8080')
+                  open(path, 'w', encoding='utf-8').write(txt)
+          print('Done')
+          EOF
+
       - name: Create Android Project
         run: |
           mkdir -p app/src/main/java/com/alomariya/app
