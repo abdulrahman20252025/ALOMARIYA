@@ -38,9 +38,16 @@ jobs:
                   if any(ord(c) > 127 for c in name):
                       old = os.path.join(root, name)
                       new_name = urllib.parse.quote(name, safe='.')
+                      if len(new_name) > 200:
+                          if os.path.isfile(old):
+                              os.remove(old)
+                          continue
                       new = os.path.join(root, new_name)
                       if old != new and os.path.exists(old):
-                          os.rename(old, new)
+                          try:
+                              os.rename(old, new)
+                          except Exception as e:
+                              print(f'Skip: {e}')
 
           print('Done')
           EOF
