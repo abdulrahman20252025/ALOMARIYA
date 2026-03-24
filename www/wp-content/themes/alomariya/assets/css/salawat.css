@@ -1,0 +1,47 @@
+@charset "utf-8";
+.salataslia, .salataslia:before, .salataslia:after
+{
+background-color: #fff;
+border: 1px solid #ccc;
+color:#555555;
+box-shadow: inset 0 0 60px rgba(102, 163, 255, .5), 0px 0px 5px rgba(0,0,0,0.5);
+-moz-box-shadow: inset 0 0 60px rgba(102, 163, 255, .5), 0px 0px 5px rgba(0,0,0,0.5); 
+-webkit-box-shadow: inset 0 0 60px rgba(102, 163, 255, .5), 0px 0px 5px rgba(0,0,0,0.5); 
+-ms-box-shadow: inset 0 0 60px rgba(102, 163, 255, .5), 0px 0px 5px rgba(0,0,0,0.5);
+-khtml-box-shadow: inset 0 0 60px rgba(102, 163, 255, .5), 0px 0px 5px rgba(0,0,0,0.5);
+-o-box-shadow: inset 0 0 60px rgba(102, 163, 255, .5), 0px 0px 5px rgba(0,0,0,0.5); 
+}
+.salataslia
+{
+position: relative;
+width: 650px;
+padding: 20px 20px 20px 40px;
+margin: 40px auto;
+ height:500px;
+ z-index:1;
+ 
+
+}
+.salataslia:before, .salataslia:after
+{
+content: "";
+position: absolute;
+
+width: 100%;
+height: 100%;
+-webkit-transform: rotateZ(5deg);
+-o-transform: rotate(5deg);
+transform: rotateZ(5deg);
+z-index: -1;
+left: 5px;
+top: -6px;
+}
+.salataslia:after
+{
+-webkit-transform: rotateZ(0deg);
+-o-transform: rotate(0deg);
+transform: rotateZ(0deg);
+top:-15px;
+left:10px;
+z-index: ;
+}

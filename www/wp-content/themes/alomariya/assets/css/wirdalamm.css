@@ -1,0 +1,63 @@
+@charset "utf-8";
+/* CSS Document */
+.wirdcontent{
+	margin:60px auto;
+	line-height:40px;
+	font-size:16px;
+	font-family:Amiri-Regular;
+	text-align:justify;
+	background:#fff;
+	color:#333;
+	width:710px;
+	height:;
+	padding:40px 70px;
+	float:;
+	border: 1px solid #dedede;
+	-webkit-transition:all 0.4s;
+	-moz-transition:all 0.4s;
+	-ms-transition:all 0.4s;
+	-o-transition:all 0.4s;
+	box-shadow:1px 2px 4px rgba(0,0,0,0.7);
+	
+}
+.wirdcontent:hover{
+	border-top-right-radius:140px 30px;
+	box-shadow:6px 6px 6px rgba(0,0,0,0.3);
+	-moz-box-shadow:6px 6px 6px rgba(0,0,0,0.3);
+   -webkit-box-shadow:6px 6px 6px rgba(0,0,0,0.3);
+}
+.printpartage{
+	position:absolute;
+	width:33px;
+	height:210px;
+	margin-left:40px;
+	top:260px;
+	left:80px;
+	padding: 0 5px;
+	border: 0px solid  ;
+	border-radius:5px;
+	-moz-border-radius: 5px;
+	-webkit-border-radius: 5px;
+	-ms-border-radius: 5px;
+	-khtml-border-radius: 5px;
+	z-index:1;
+	}
+.print-link img, .wpdf img{
+	margin-bottom:8px;
+	width:32px;
+	height:32px;
+	cursor:pointer;
+	}
+.wpdf img{
+	margin-bottom:30px;
+	}
+.face img, .twe img, .wat img{
+	margin-bottom:8px;
+	}
+@media screen and (max-width: 1024px) {
+  .wirdcontent{
+	font-size:160% !important;
+    line-height:45px;
+	}
+   
+} 
