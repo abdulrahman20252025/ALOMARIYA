@@ -57,6 +57,7 @@ jobs:
           import android.content.Context;
           import java.io.*;
           import java.net.*;
+          import java.nio.charset.StandardCharsets;
           public class LocalServer extends Thread {
               private final Context ctx;
               private volatile boolean ready = false;
@@ -74,14 +75,19 @@ jobs:
                   Handler(Socket s, Context ctx) { this.s=s; this.ctx=ctx; setDaemon(true); }
                   public void run() {
                       try {
-                          BufferedReader r = new BufferedReader(new InputStreamReader(s.getInputStream()));
+                          BufferedReader r = new BufferedReader(new InputStreamReader(s.getInputStream(), StandardCharsets.UTF_8));
                           String line = r.readLine();
                           if (line == null) { s.close(); return; }
                           String path = line.split(" ")[1];
                           if (path.contains("?")) path = path.substring(0, path.indexOf("?"));
-                          path = URLDecoder.decode(path, "UTF-8");
+                          try {
+                              path = URLDecoder.decode(path.replace("+", "%2B"), "UTF-8");
+                          } catch (Exception e) {
+                              path = path;
+                          }
                           if (path.endsWith("/")) path = path + "index.html";
                           if (!path.contains(".")) path = path + "/index.html";
+                          String assetPath = "www" + path;
                           String mime = "text/html;charset=utf-8";
                           if (path.endsWith(".css")) mime = "text/css";
                           else if (path.endsWith(".js")) mime = "application/javascript";
@@ -89,18 +95,26 @@ jobs:
                           else if (path.endsWith(".jpg")||path.endsWith(".jpeg")) mime = "image/jpeg";
                           else if (path.endsWith(".gif")) mime = "image/gif";
                           else if (path.endsWith(".pdf")) mime = "application/pdf";
+                          else if (path.endsWith(".woff")||path.endsWith(".woff2")) mime = "font/woff2";
                           OutputStream out = s.getOutputStream();
                           try {
-                              InputStream in = ctx.getAssets().open("www" + path);
+                              InputStream in = ctx.getAssets().open(assetPath);
                               ByteArrayOutputStream bos = new ByteArrayOutputStream();
                               byte[] buf = new byte[8192]; int n;
                               while ((n = in.read(buf)) != -1) bos.write(buf, 0, n);
                               byte[] data = bos.toByteArray();
-                              out.write(("HTTP/1.1 200 OK\r\nContent-Type: "+mime+"\r\nContent-Length: "+data.length+"\r\nAccess-Control-Allow-Origin: *\r\n\r\n").getBytes());
+                              String header = "HTTP/1.1 200 OK\r\n" +
+                                  "Content-Type: " + mime + "\r\n" +
+                                  "Content-Length: " + data.length + "\r\n" +
+                                  "Access-Control-Allow-Origin: *\r\n" +
+                                  "Cache-Control: max-age=3600\r\n\r\n";
+                              out.write(header.getBytes(StandardCharsets.UTF_8));
                               out.write(data);
                           } catch (Exception e) {
                               String notFound = "<html><body>404: " + path + "</body></html>";
-                              out.write(("HTTP/1.1 404 Not Found\r\nContent-Length: "+notFound.length()+"\r\n\r\n"+notFound).getBytes());
+                              byte[] data = notFound.getBytes(StandardCharsets.UTF_8);
+                              out.write(("HTTP/1.1 404 Not Found\r\nContent-Length: " + data.length + "\r\n\r\n").getBytes());
+                              out.write(data);
                           }
                           out.flush(); s.close();
                       } catch (Exception e) {}
