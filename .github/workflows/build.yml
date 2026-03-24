@@ -16,10 +16,11 @@ jobs:
           httrack https://www.alomariya.org/ -O ./site -r5 -%v -X "*.mp4" -X "*.mp3"
           mv ./site/www.alomariya.org ./webfiles
 
-      - name: Fix Links
+      - name: Fix Links and Rename
         run: |
-          python3 - << 'EOF'
-          import os
+          python3 << 'EOF'
+          import os, urllib.parse
+
           for root, dirs, files in os.walk('./webfiles'):
               for f in files:
                   if not (f.endswith('.html') or f.endswith('.js')):
@@ -31,6 +32,16 @@ jobs:
                   txt = txt.replace('https:\\/\\/www.alomariya.org', 'http:\\/\\/localhost:8080')
                   txt = txt.replace('http:\\/\\/www.alomariya.org', 'http:\\/\\/localhost:8080')
                   open(path, 'w', encoding='utf-8').write(txt)
+
+          for root, dirs, files in os.walk('./webfiles', topdown=False):
+              for name in dirs + files:
+                  if any(ord(c) > 127 for c in name):
+                      old = os.path.join(root, name)
+                      new_name = urllib.parse.quote(name, safe='.')
+                      new = os.path.join(root, new_name)
+                      if old != new and os.path.exists(old):
+                          os.rename(old, new)
+
           print('Done')
           EOF
 
@@ -80,11 +91,6 @@ jobs:
                           if (line == null) { s.close(); return; }
                           String path = line.split(" ")[1];
                           if (path.contains("?")) path = path.substring(0, path.indexOf("?"));
-                          try {
-                              path = URLDecoder.decode(path.replace("+", "%2B"), "UTF-8");
-                          } catch (Exception e) {
-                              path = path;
-                          }
                           if (path.endsWith("/")) path = path + "index.html";
                           if (!path.contains(".")) path = path + "/index.html";
                           String assetPath = "www" + path;
@@ -106,8 +112,7 @@ jobs:
                               String header = "HTTP/1.1 200 OK\r\n" +
                                   "Content-Type: " + mime + "\r\n" +
                                   "Content-Length: " + data.length + "\r\n" +
-                                  "Access-Control-Allow-Origin: *\r\n" +
-                                  "Cache-Control: max-age=3600\r\n\r\n";
+                                  "Access-Control-Allow-Origin: *\r\n\r\n";
                               out.write(header.getBytes(StandardCharsets.UTF_8));
                               out.write(data);
                           } catch (Exception e) {
