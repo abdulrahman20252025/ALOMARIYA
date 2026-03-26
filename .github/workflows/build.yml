@@ -13,13 +13,15 @@ jobs:
       - name: Download Website
         run: |
           sudo apt-get install -y httrack imagemagick
-          httrack https://www.alomariya.org/ -O ./site -r5 -%v -%A -X "*.mp4" -X "*.mp3"
+          httrack https://www.alomariya.org/ -O ./site -r5 -%v -X "*.mp4" -X "*.mp3"
           mv ./site/www.alomariya.org ./webfiles
 
-      - name: Fix Links
+      - name: Fix Links and Rename
         run: |
           python3 << 'EOF'
-          import os
+          import os, urllib.parse
+
+          # Fix links
           for root, dirs, files in os.walk('./webfiles'):
               for f in files:
                   if not (f.endswith('.html') or f.endswith('.js')):
@@ -31,6 +33,24 @@ jobs:
                   txt = txt.replace('https:\\/\\/www.alomariya.org', 'http:\\/\\/localhost:8080')
                   txt = txt.replace('http:\\/\\/www.alomariya.org', 'http:\\/\\/localhost:8080')
                   open(path, 'w', encoding='utf-8').write(txt)
+
+          # Rename arabic folders/files
+          for root, dirs, files in os.walk('./webfiles', topdown=False):
+              for name in dirs + files:
+                  if any(ord(c) > 127 for c in name):
+                      old = os.path.join(root, name)
+                      new_name = urllib.parse.quote(name, safe='.')
+                      if len(os.path.join(root, new_name)) > 250:
+                          if os.path.isfile(old):
+                              os.remove(old)
+                          continue
+                      new = os.path.join(root, new_name)
+                      if old != new and os.path.exists(old):
+                          try:
+                              os.rename(old, new)
+                          except Exception as e:
+                              print(f'Skip: {e}')
+
           print('Done')
           EOF
 
