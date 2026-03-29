@@ -21,7 +21,6 @@ jobs:
           python3 << 'EOF'
           import os, urllib.parse
 
-          # Fix links
           for root, dirs, files in os.walk('./webfiles'):
               for f in files:
                   if not (f.endswith('.html') or f.endswith('.js')):
@@ -34,7 +33,6 @@ jobs:
                   txt = txt.replace('http:\\/\\/www.alomariya.org', 'http:\\/\\/localhost:8080')
                   open(path, 'w', encoding='utf-8').write(txt)
 
-          # Rename arabic folders/files
           for root, dirs, files in os.walk('./webfiles', topdown=False):
               for name in dirs + files:
                   if any(ord(c) > 127 for c in name):
@@ -103,6 +101,148 @@ jobs:
                           if (path.endsWith("/")) path = path + "index.html";
                           if (!path.contains(".")) path = path + "/index.html";
                           String assetPath = "www" + path;
+                          String mime = "text/html;charset=utf-8";
+                          if (path.endsWith(".css")) mime = "text/css";
+                          else if (path.endsWith(".js")) mime = "application/javascript";
+                          else if (path.endsWith(".png")) mime = "image/png";
+                          else if (path.endsWith(".jpg")||path.endsWith(".jpeg")) mime = "image/jpeg";
+                          else if (path.endsWith(".gif")) mime = "image/gif";
+                          else if (path.endsWith(".pdf")) mime = "application/pdf";
+                          else if (path.endsWith(".woff")||path.endsWith(".woff2")) mime = "font/woff2";
+                          OutputStream out = s.getOutputStream();
+                          try {
+                              InputStream in = ctx.getAssets().open(assetPath);
+                              ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                              byte[] buf = new byte[8192]; int n;
+                              while ((n = in.read(buf)) != -1) bos.write(buf, 0, n);
+                              byte[] data = bos.toByteArray();
+                              String header = "HTTP/1.1 200 OK\r\n" +
+                                  "Content-Type: " + mime + "\r\n" +
+                                  "Content-Length: " + data.length + "\r\n" +
+                                  "Access-Control-Allow-Origin: *\r\n\r\n";
+                              out.write(header.getBytes(StandardCharsets.UTF_8));
+                              out.write(data);
+                          } catch (Exception e) {
+                              String notFound = "<html><body>404: " + path + "</body></html>";
+                              byte[] data = notFound.getBytes(StandardCharsets.UTF_8);
+                              out.write(("HTTP/1.1 404 Not Found\r\nContent-Length: " + data.length + "\r\n\r\n").getBytes());
+                              out.write(data);
+                          }
+                          out.flush(); s.close();
+                      } catch (Exception e) {}
+                  }
+              }
+          }
+          EOF
+
+          cat > app/src/main/java/com/alomariya/app/MainActivity.java << 'EOF'
+          package com.alomariya.app;
+          import android.app.Activity;
+          import android.net.Uri;
+          import android.os.Bundle;
+          import android.os.Handler;
+          import androidx.browser.customtabs.CustomTabsIntent;
+          public class MainActivity extends Activity {
+              LocalServer server;
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  server = new LocalServer(this);
+                  server.start();
+                  new Handler().post(new Runnable() {
+                      public void run() {
+                          if (server.isReady()) {
+                              CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder();
+                              builder.setShowTitle(false);
+                              builder.setUrlBarHidingEnabled(true);
+                              CustomTabsIntent customTabsIntent = builder.build();
+                              customTabsIntent.launchUrl(MainActivity.this, Uri.parse("http://localhost:8080/"));
+                          } else {
+                              new Handler().postDelayed(this, 100);
+                          }
+                      }
+                  });
+              }
+          }
+          EOF
+
+          cat > app/src/main/AndroidManifest.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+              package="com.alomariya.app">
+              <uses-permission android:name="android.permission.INTERNET"/>
+              <application
+                  android:allowBackup="true"
+                  android:icon="@mipmap/ic_launcher"
+                  android:label="العمريّة للتجديد الصوفي"
+                  android:usesCleartextTraffic="true">
+                  <activity android:name=".MainActivity"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          mkdir -p gradle/wrapper
+          cat > gradle.properties << 'EOF'
+          android.useAndroidX=true
+          android.enableJetifier=true
+          EOF
+          cat > settings.gradle << 'EOF'
+          pluginManagement {
+              repositories { google(); mavenCentral(); gradlePluginPortal() }
+          }
+          dependencyResolutionManagement {
+              repositories { google(); mavenCentral() }
+          }
+          include ':app'
+          EOF
+          cat > build.gradle << 'EOF'
+          plugins {
+              id 'com.android.application' version '8.1.0' apply false
+          }
+          EOF
+          cat > app/build.gradle << 'EOF'
+          plugins {
+              id 'com.android.application'
+          }
+          android {
+              namespace 'com.alomariya.app'
+              compileSdk 34
+              defaultConfig {
+                  applicationId 'com.alomariya.app'
+                  minSdk 21
+                  targetSdk 34
+                  versionCode 1
+                  versionName '1.0'
+              }
+          }
+          dependencies {
+              implementation 'androidx.browser:browser:1.5.0'
+          }
+          EOF
+          cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
+          distributionBase=GRADLE_USER_HOME
+          distributionPath=wrapper/dists
+          distributionUrl=https\://services.gradle.org/distributions/gradle-8.1.1-all.zip
+          zipStoreBase=GRADLE_USER_HOME
+          zipStorePath=wrapper/dists
+          EOF
+          curl -Lo gradle/wrapper/gradle-wrapper.jar https://github.com/gradle/gradle/raw/v8.1.1/gradle/wrapper/gradle-wrapper.jar
+          curl -Lo gradlew https://raw.githubusercontent.com/gradle/gradle/v8.1.1/gradlew
+          chmod +x gradlew
+
+      - name: Build APK
+        run: ./gradlew assembleDebug --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: alomariya-apk
+          path: app/build/outputs/apk/debug/app-debug.apk                          String assetPath = "www" + path;
                           String mime = "text/html;charset=utf-8";
                           if (path.endsWith(".css")) mime = "text/css";
                           else if (path.endsWith(".js")) mime = "application/javascript";
