@@ -37,7 +37,7 @@ jobs:
               for name in dirs + files:
                   if any(ord(c) > 127 for c in name):
                       old = os.path.join(root, name)
-                      new_name = urllib.parse.quote(name, safe='.')
+                      new_name = urllib.parse.quote(name, safe='.-')
                       if len(os.path.join(root, new_name)) > 250:
                           if os.path.isfile(old):
                               os.remove(old)
