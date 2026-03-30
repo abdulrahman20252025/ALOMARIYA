@@ -98,6 +98,15 @@ jobs:
                           if (line == null) { s.close(); return; }
                           String path = line.split(" ")[1];
                           if (path.contains("?")) path = path.substring(0, path.indexOf("?"));
+                          StringBuilder sb = new StringBuilder(path);
+                          for (int i = 0; i < sb.length(); i++) {
+                              if (sb.charAt(i) == '%' && i + 2 < sb.length()) {
+                                  sb.setCharAt(i+1, Character.toUpperCase(sb.charAt(i+1)));
+                                  sb.setCharAt(i+2, Character.toUpperCase(sb.charAt(i+2)));
+                                  i += 2;
+                              }
+                          }
+                          path = sb.toString();
                           if (path.endsWith("/")) path = path + "index.html";
                           if (!path.contains(".")) path = path + "/index.html";
                           String assetPath = "www" + path;
