@@ -22,11 +22,6 @@ jobs:
           import os, urllib.parse, hashlib, json, shutil
 
           mapping = {}
-
-          def safe_name(path):
-              return hashlib.md5(path.encode()).hexdigest()
-
-          # Build flat structure
           os.makedirs('./flatfiles', exist_ok=True)
 
           for root, dirs, files in os.walk('./webfiles'):
@@ -34,22 +29,26 @@ jobs:
                   full = os.path.join(root, f)
                   rel = os.path.relpath(full, './webfiles')
                   rel_url = '/' + rel.replace(os.sep, '/')
+                  ext = os.path.splitext(f)[1].lower()
 
-                  # Check if path has non-ASCII
                   if any(ord(c) > 127 for c in rel_url):
-                      safe = safe_name(rel_url)
-                      ext = os.path.splitext(f)[1]
+                      safe = hashlib.md5(rel_url.encode()).hexdigest()
                       new_name = safe + ext
-                      mapping[urllib.parse.quote(rel_url, safe='/-.')] = new_name
+                      # Store both encoded (uppercase) and decoded versions
+                      encoded = urllib.parse.quote(rel_url, safe='/-.')
+                      mapping[encoded.upper()] = new_name
+                      mapping[encoded] = new_name
                       mapping[rel_url] = new_name
                   else:
                       new_name = rel_url.replace('/', '_').lstrip('_')
                       mapping[rel_url] = new_name
 
                   dest = os.path.join('./flatfiles', new_name)
-                  shutil.copy2(full, dest)
+                  try:
+                      shutil.copy2(full, dest)
+                  except Exception as e:
+                      print(f'Skip copy: {e}')
 
-          # Fix links in HTML/JS files
           for name in os.listdir('./flatfiles'):
               path = os.path.join('./flatfiles', name)
               if not (name.endswith('.html') or name.endswith('.js')):
@@ -61,11 +60,10 @@ jobs:
               txt = txt.replace('http:\\/\\/www.alomariya.org', 'http:\\/\\/localhost:8080')
               open(path, 'w', encoding='utf-8').write(txt)
 
-          # Save mapping
           with open('./flatfiles/urlmap.json', 'w', encoding='utf-8') as f:
               json.dump(mapping, f, ensure_ascii=False)
 
-          print(f'Done. {len(mapping)} files mapped.')
+          print(f'Done. {len(mapping)} entries.')
           EOF
 
       - name: Create Android Project
@@ -102,9 +100,10 @@ jobs:
                   setDaemon(true);
                   try {
                       InputStream is = ctx.getAssets().open("www/urlmap.json");
-                      byte[] buf = new byte[is.available()];
-                      is.read(buf);
-                      urlMap = new JSONObject(new String(buf, StandardCharsets.UTF_8));
+                      ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                      byte[] buf = new byte[8192]; int n;
+                      while ((n = is.read(buf)) != -1) bos.write(buf, 0, n);
+                      urlMap = new JSONObject(bos.toString("UTF-8"));
                   } catch (Exception e) {}
               }
               public boolean isReady() { return ready; }
@@ -130,21 +129,34 @@ jobs:
                           if (path.endsWith("/")) path = path + "index.html";
                           if (!path.contains(".")) path = path + "/index.html";
 
+                          // Normalize %xx to uppercase
+                          StringBuilder sb = new StringBuilder(path);
+                          for (int i = 0; i < sb.length(); i++) {
+                              if (sb.charAt(i) == '%' && i + 2 < sb.length()) {
+                                  sb.setCharAt(i+1, Character.toUpperCase(sb.charAt(i+1)));
+                                  sb.setCharAt(i+2, Character.toUpperCase(sb.charAt(i+2)));
+                                  i += 2;
+                              }
+                          }
+                          String normalizedPath = sb.toString();
+
                           String assetName = null;
                           if (urlMap != null) {
-                              // Try exact match
-                              if (urlMap.has(path)) {
+                              if (urlMap.has(normalizedPath)) {
+                                  assetName = urlMap.getString(normalizedPath);
+                              } else if (urlMap.has(path)) {
                                   assetName = urlMap.getString(path);
                               } else {
-                                  // Try decoded
-                                  String decoded = URLDecoder.decode(path, "UTF-8");
-                                  if (urlMap.has(decoded)) {
-                                      assetName = urlMap.getString(decoded);
-                                  }
+                                  try {
+                                      String decoded = URLDecoder.decode(path, "UTF-8");
+                                      if (urlMap.has(decoded)) {
+                                          assetName = urlMap.getString(decoded);
+                                      }
+                                  } catch (Exception e) {}
                               }
                           }
                           if (assetName == null) {
-                              assetName = path.replace('/', '_').replaceAll("^_", "");
+                              assetName = path.replace('/', '_').replaceAll("^_+", "");
                           }
 
                           String assetPath = "www/" + assetName;
