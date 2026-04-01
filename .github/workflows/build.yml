@@ -25,54 +25,84 @@ jobs:
             sleep 0.3
           done
 
-      - name: Fix and Flatten
+      - name: Fix Structure
         run: |
-          python3 << 'EOF'
-          import os, urllib.parse, hashlib, json, shutil
+          python3 << 'PYEOF'
+          import os, hashlib, json, shutil, urllib.parse
 
-          mapping = {}
-          os.makedirs('./flatfiles', exist_ok=True)
+          # Step 1: Build mapping from Arabic paths to safe paths
+          # Walk and find all Arabic-named directories
+          arabic_dirs = {}
 
           for root, dirs, files in os.walk('./webfiles'):
-              for f in files:
-                  full = os.path.join(root, f)
-                  rel = os.path.relpath(full, './webfiles')
-                  rel_url = '/' + rel.replace(os.sep, '/')
-                  ext = os.path.splitext(f)[1].lower()
+              rel_root = os.path.relpath(root, './webfiles')
+              if rel_root == '.':
+                  rel_root = ''
+              parts = rel_root.replace('\\', '/').split('/') if rel_root else []
+              for i, part in enumerate(parts):
+                  if any(ord(c) > 127 for c in part):
+                      orig_path = '/'.join(parts[:i+1])
+                      if orig_path not in arabic_dirs:
+                          safe = 'dir_' + hashlib.md5(orig_path.encode()).hexdigest()[:8]
+                          arabic_dirs[orig_path] = safe
 
-                  if any(ord(c) > 127 for c in rel_url):
-                      safe = hashlib.md5(rel_url.encode()).hexdigest()
-                      new_name = safe + ext
-                      encoded = urllib.parse.quote(rel_url, safe='/-.')
-                      mapping[encoded.upper()] = new_name
-                      mapping[encoded] = new_name
-                      mapping[rel_url] = new_name
-                  else:
-                      new_name = rel_url.replace('/', '_').lstrip('_')
-                      mapping[rel_url] = new_name
+          print(f'Arabic dirs found: {arabic_dirs}')
 
-                  dest = os.path.join('./flatfiles', new_name)
-                  try:
-                      shutil.copy2(full, dest)
-                  except Exception as e:
-                      print(f'Skip: {e}')
-
-          for name in os.listdir('./flatfiles'):
-              path = os.path.join('./flatfiles', name)
-              if not (name.endswith('.html') or name.endswith('.js')):
-                  continue
-              txt = open(path, encoding='utf-8', errors='ignore').read()
+          # Step 2: Fix all links in HTML/JS/CSS files BEFORE renaming
+          def fix_content(txt):
               txt = txt.replace('https://www.alomariya.org', 'http://localhost:8080')
               txt = txt.replace('http://www.alomariya.org', 'http://localhost:8080')
               txt = txt.replace('https:\\/\\/www.alomariya.org', 'http:\\/\\/localhost:8080')
               txt = txt.replace('http:\\/\\/www.alomariya.org', 'http:\\/\\/localhost:8080')
-              open(path, 'w', encoding='utf-8').write(txt)
+              # Replace Arabic dir names with safe names in URLs
+              for arabic, safe in arabic_dirs.items():
+                  txt = txt.replace('/' + arabic + '/', '/' + safe + '/')
+                  txt = txt.replace('/' + arabic + '"', '/' + safe + '"')
+                  txt = txt.replace('/' + arabic + "'", '/' + safe + "'")
+                  encoded = urllib.parse.quote(arabic, safe='')
+                  txt = txt.replace('/' + encoded + '/', '/' + safe + '/')
+              return txt
 
-          with open('./flatfiles/urlmap.json', 'w', encoding='utf-8') as f:
-              json.dump(mapping, f, ensure_ascii=False)
+          for root, dirs, files in os.walk('./webfiles'):
+              for f in files:
+                  if not (f.endswith('.html') or f.endswith('.js') or f.endswith('.css')):
+                      continue
+                  path = os.path.join(root, f)
+                  try:
+                      txt = open(path, encoding='utf-8', errors='ignore').read()
+                      fixed = fix_content(txt)
+                      if fixed != txt:
+                          open(path, 'w', encoding='utf-8').write(fixed)
+                  except:
+                      pass
 
-          print(f'Done. {len(mapping)} entries.')
-          EOF
+          # Step 3: Rename Arabic dirs (bottom-up)
+          for root, dirs, files in os.walk('./webfiles', topdown=False):
+              rel_root = os.path.relpath(root, './webfiles').replace('\\', '/')
+              if rel_root == '.':
+                  continue
+              parts = rel_root.split('/')
+              for i, part in enumerate(parts):
+                  if any(ord(c) > 127 for c in part):
+                      orig_path = '/'.join(parts[:i+1])
+                      if orig_path in arabic_dirs:
+                          safe = arabic_dirs[orig_path]
+                          old = './webfiles/' + orig_path
+                          new = './webfiles/' + '/'.join(parts[:i]) + '/' + safe if i > 0 else './webfiles/' + safe
+                          if os.path.exists(old) and not os.path.exists(new):
+                              try:
+                                  shutil.move(old, new)
+                                  print(f'Renamed: {old} -> {new}')
+                              except Exception as e:
+                                  print(f'Error: {e}')
+                          break
+
+          # Save mapping for server
+          with open('./webfiles/urlmap.json', 'w', encoding='utf-8') as f:
+              json.dump(arabic_dirs, f, ensure_ascii=False)
+
+          print('Done!')
+          PYEOF
 
       - name: Create Android Project
         run: |
@@ -83,7 +113,7 @@ jobs:
           mkdir -p app/src/main/res/mipmap-xhdpi
           mkdir -p app/src/main/res/mipmap-xxhdpi
           mkdir -p app/src/main/res/mipmap-xxxhdpi
-          cp -r flatfiles/* app/src/main/assets/www/
+          cp -r webfiles/* app/src/main/assets/www/
           convert icon.jpg -resize 72x72 app/src/main/res/mipmap-hdpi/ic_launcher.png
           convert icon.jpg -resize 48x48 app/src/main/res/mipmap-mdpi/ic_launcher.png
           convert icon.jpg -resize 96x96 app/src/main/res/mipmap-xhdpi/ic_launcher.png
@@ -95,38 +125,24 @@ jobs:
           cat > app/src/main/java/com/alomariya/app/LocalServer.java << 'EOF'
           package com.alomariya.app;
           import android.content.Context;
-          import org.json.JSONObject;
           import java.io.*;
           import java.net.*;
           import java.nio.charset.StandardCharsets;
           public class LocalServer extends Thread {
               private final Context ctx;
               private volatile boolean ready = false;
-              private JSONObject urlMap = null;
-              public LocalServer(Context ctx) {
-                  this.ctx = ctx;
-                  setDaemon(true);
-                  try {
-                      InputStream is = ctx.getAssets().open("www/urlmap.json");
-                      ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                      byte[] buf = new byte[8192]; int n;
-                      while ((n = is.read(buf)) != -1) bos.write(buf, 0, n);
-                      urlMap = new JSONObject(bos.toString("UTF-8"));
-                  } catch (Exception e) {}
-              }
+              public LocalServer(Context ctx) { this.ctx = ctx; setDaemon(true); }
               public boolean isReady() { return ready; }
               public void run() {
                   try {
                       ServerSocket server = new ServerSocket(8080);
                       ready = true;
-                      while (true) { new Handler(server.accept(), ctx, urlMap).start(); }
+                      while (true) { new Handler(server.accept(), ctx).start(); }
                   } catch (Exception e) {}
               }
               static class Handler extends Thread {
-                  Socket s; Context ctx; JSONObject urlMap;
-                  Handler(Socket s, Context ctx, JSONObject urlMap) {
-                      this.s=s; this.ctx=ctx; this.urlMap=urlMap; setDaemon(true);
-                  }
+                  Socket s; Context ctx;
+                  Handler(Socket s, Context ctx) { this.s=s; this.ctx=ctx; setDaemon(true); }
                   public void run() {
                       try {
                           BufferedReader r = new BufferedReader(new InputStreamReader(s.getInputStream(), StandardCharsets.UTF_8));
@@ -136,37 +152,7 @@ jobs:
                           if (path.contains("?")) path = path.substring(0, path.indexOf("?"));
                           if (path.endsWith("/")) path = path + "index.html";
                           if (!path.contains(".")) path = path + "/index.html";
-
-                          StringBuilder sb = new StringBuilder(path);
-                          for (int i = 0; i < sb.length(); i++) {
-                              if (sb.charAt(i) == '%' && i + 2 < sb.length()) {
-                                  sb.setCharAt(i+1, Character.toUpperCase(sb.charAt(i+1)));
-                                  sb.setCharAt(i+2, Character.toUpperCase(sb.charAt(i+2)));
-                                  i += 2;
-                              }
-                          }
-                          String normalizedPath = sb.toString();
-
-                          String assetName = null;
-                          if (urlMap != null) {
-                              if (urlMap.has(normalizedPath)) {
-                                  assetName = urlMap.getString(normalizedPath);
-                              } else if (urlMap.has(path)) {
-                                  assetName = urlMap.getString(path);
-                              } else {
-                                  try {
-                                      String decoded = URLDecoder.decode(path, "UTF-8");
-                                      if (urlMap.has(decoded)) {
-                                          assetName = urlMap.getString(decoded);
-                                      }
-                                  } catch (Exception e) {}
-                              }
-                          }
-                          if (assetName == null) {
-                              assetName = path.replace('/', '_').replaceAll("^_+", "");
-                          }
-
-                          String assetPath = "www/" + assetName;
+                          String assetPath = "www" + path;
                           String mime = "text/html;charset=utf-8";
                           if (path.endsWith(".css")) mime = "text/css";
                           else if (path.endsWith(".js")) mime = "application/javascript";
