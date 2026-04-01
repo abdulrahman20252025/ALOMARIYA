@@ -16,6 +16,15 @@ jobs:
           httrack https://www.alomariya.org/ -O ./site -r5 -%v -X "*.mp4" -X "*.mp3"
           mv ./site/www.alomariya.org ./webfiles
 
+      - name: Download QA Pages
+        run: |
+          for i in $(seq 1 333); do
+            mkdir -p "./webfiles/سؤال-وجواب/page/$i"
+            wget -q "https://www.alomariya.org/سؤال-وجواب/page/$i/" \
+              -O "./webfiles/سؤال-وجواب/page/$i/index.html" || true
+            sleep 0.3
+          done
+
       - name: Fix and Flatten
         run: |
           python3 << 'EOF'
@@ -34,7 +43,6 @@ jobs:
                   if any(ord(c) > 127 for c in rel_url):
                       safe = hashlib.md5(rel_url.encode()).hexdigest()
                       new_name = safe + ext
-                      # Store both encoded (uppercase) and decoded versions
                       encoded = urllib.parse.quote(rel_url, safe='/-.')
                       mapping[encoded.upper()] = new_name
                       mapping[encoded] = new_name
@@ -47,7 +55,7 @@ jobs:
                   try:
                       shutil.copy2(full, dest)
                   except Exception as e:
-                      print(f'Skip copy: {e}')
+                      print(f'Skip: {e}')
 
           for name in os.listdir('./flatfiles'):
               path = os.path.join('./flatfiles', name)
@@ -129,7 +137,6 @@ jobs:
                           if (path.endsWith("/")) path = path + "index.html";
                           if (!path.contains(".")) path = path + "/index.html";
 
-                          // Normalize %xx to uppercase
                           StringBuilder sb = new StringBuilder(path);
                           for (int i = 0; i < sb.length(); i++) {
                               if (sb.charAt(i) == '%' && i + 2 < sb.length()) {
